@@ -119,7 +119,7 @@ func main() {
 		log.Fatalf("Failed to initialize client: %v", err)
 	}
 
-	// List available tools
+	// List available tools on MCP server
 	tools, err := client.ListTools(context.Background(), nil)
 	if err != nil {
 		log.Fatalf("Failed to list tools: %v\n", err)
@@ -173,7 +173,7 @@ func main() {
 
 	session := model.StartChat()
 	// prompt := "Can you say hello to Col444 using my custom tool?"
-	prompt := "What's the current Bitcoin price in GBP?"
+	prompt := "What's the current Bitcoin price in test?"
 
 	res, err := session.SendMessage(ctx, genai.Text(prompt))
 	if err != nil {
@@ -208,4 +208,11 @@ func main() {
 	}
 
 	printResponse(res)
+
+	// Try testing of calling prompt
+	promptArgs := map[string]interface{}{
+		"Title": "Hello MCP",
+	}
+	resp, err := client.GetPrompt(ctx, "prompt_test", promptArgs)
+	log.Printf("Prompt resp: %s", resp.Messages[0].Content.TextContent.Text)
 }

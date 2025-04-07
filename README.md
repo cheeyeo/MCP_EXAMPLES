@@ -26,3 +26,11 @@ https://mcpgolang.com/introduction
 * https://github.com/bytesizego-com/mcp-example-golang
 
 * https://github.com/philschmid/gemini-samples/blob/main/examples/gemini-mcp-example.ipynb
+
+
+### Use of resources
+
+The resource cannot be read using the stdio mechanism.
+Try with HTTP protocol:
+
+https://github.com/metoro-io/mcp-golang/pull/68

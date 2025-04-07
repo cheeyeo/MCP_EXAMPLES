@@ -36,6 +36,11 @@ type CoinGeckoResponse struct {
 	} `json:"bitcoin"`
 }
 
+type Content struct {
+	Title       string  `json:"title" jsonschema:"required,description=The title to submit"`
+	Description *string `json:"description" jsonschema:"description=The description to submit"`
+}
+
 func getBitcoinPrice(currency string) (float64, error) {
 	log.Printf("INSIDE GET BITCOIN PRICE - CURRENCY - %s", currency)
 	// Create HTTP client with timeout
@@ -126,6 +131,15 @@ func main() {
 	})
 	if err != nil {
 		log.Fatalf("error registering bitcoin_price tool: %v", err)
+	}
+
+	err = server.RegisterPrompt("prompt_test", "This is a test prompt", func(arguments Content) (*mcp_golang.PromptResponse, error) {
+		log.Println("Received request for prompt_test")
+
+		return mcp_golang.NewPromptResponse("description", mcp_golang.NewPromptMessage(mcp_golang.NewTextContent(fmt.Sprintf("Hello, %s!", arguments.Title)), mcp_golang.RoleUser)), nil
+	})
+	if err != nil {
+		log.Fatalf("error registering prompt_test prompt: %v", err)
 	}
 
 	err = server.Serve()
