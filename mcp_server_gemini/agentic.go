@@ -1,6 +1,7 @@
 package main
 
 // Example of using MCP with Gemini via Function Calls
+// Uses an agentic approach by using the model's short-term memory to store chat history
 
 import (
 	"context"
