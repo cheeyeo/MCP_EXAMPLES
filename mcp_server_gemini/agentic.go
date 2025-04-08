@@ -169,80 +169,72 @@ func main() {
 
 	model := geminiClient.GenerativeModel("gemini-2.5-pro-preview-03-25")
 	model.Tools = geminiTools
-	model.SetTemperature(0.1)
+	model.SetTemperature(0.0)
 
 	session := model.StartChat()
-	prompt := "What's the current Bitcoin price in GBP?"
+	prompt := "What's the current Bitcoin price GBP? Only provide your answer in a natural language response."
 
-	session.History = append(session.History, &genai.Content{
-		Parts: []genai.Part{genai.Text(prompt)},
-		Role:  "user",
-	})
+	contents := []*genai.Content{
+		{
+			Parts: []genai.Part{
+				genai.Text(prompt),
+			},
+			Role: "user",
+		},
+	}
+	session.History = contents
 
 	var resp *genai.GenerateContentResponse
 	resp, err = session.SendMessage(ctx, genai.Text(prompt))
 	if err != nil {
 		log.Fatalf("session.SendMessage: %v", err)
 	}
-	// fmt.Printf("RSP: %+v\n", resp.Candidates[0].Content)
+	printResponse(resp)
 
 	// Append initial response to contents
-	session.History = append(session.History, resp.Candidates[0].Content)
+	contents = append(contents, resp.Candidates[0].Content)
+	session.History = contents
 
-	maxToolTurns := 5
-	for turnCount := 0; turnCount < maxToolTurns; turnCount++ {
-		// TODO: Rewrite below to use filters...
-		toolResponseParts := []genai.Part{}
-
-		for _, part := range resp.Candidates[0].Content.Parts {
-			funcall, ok := part.(genai.FunctionCall)
-			log.Printf("gemini funcall: %+v\n", funcall)
-			if ok {
-				// Make actual call in MCP
-				var geminiFunctionResponse map[string]any
-				helloResp, err := client.CallTool(context.Background(), funcall.Name, funcall.Args)
-				if err != nil {
-					log.Printf("failed to call tool: %v\n", err)
-					geminiFunctionResponse = map[string]any{"error": err}
-				} else {
-					log.Printf("Response: %v\n", helloResp.Content[0].TextContent.Text)
-					geminiFunctionResponse = map[string]any{"response": helloResp.Content[0].TextContent.Text}
-				}
-
-				session.History = append(session.History, &genai.Content{
-					Role:  "model",
-					Parts: []genai.Part{funcall},
-				})
-
-				toolResponseParts = append(toolResponseParts, genai.FunctionResponse{
-					Name:     funcall.Name,
-					Response: geminiFunctionResponse,
-				})
-			}
-		}
-
-		session.History = append(session.History, &genai.Content{
-			Role:  "user",
-			Parts: toolResponseParts,
-		})
-		log.Printf("Added %d tool response parts to history...", len(toolResponseParts))
-
-		log.Println("Making subsequent API call with tool responses...")
-		resp, err = session.SendMessage(ctx, genai.Text(prompt))
-		if err != nil {
-			panic(err)
-		}
-		if resp != nil {
-			session.History = append(session.History, resp.Candidates[0].Content)
-		}
-
-		fmt.Printf("TURNCOUNT: %+v\n", turnCount)
+	part := resp.Candidates[0].Content.Parts[0]
+	funcall, ok := part.(genai.FunctionCall)
+	log.Printf("gemini funcall: %+v\n", funcall)
+	if !ok {
+		log.Fatalf("expected functioncall but received error:\n%v", part)
 	}
 
-	// printResponse(resp)
-	for _, part := range resp.Candidates[0].Content.Parts {
-		fmt.Printf("PART: %+v\n", part)
-		funcall, _ := part.(genai.FunctionCall)
-		log.Printf("gemini funcall: %+v\n", funcall)
+	// Make actual call in MCP
+	var geminiFunctionResponse map[string]any
+	helloResp, err := client.CallTool(context.Background(), funcall.Name, funcall.Args)
+	if err != nil {
+		log.Printf("failed to call tool: %v\n", err)
+		geminiFunctionResponse = map[string]any{"error": err}
+	} else {
+		log.Printf("mcp response: %v\n", helloResp.Content[0].TextContent.Text)
+		geminiFunctionResponse = map[string]any{"response": helloResp.Content[0].TextContent.Text}
 	}
+
+	//  Adding model and user responses to memory
+	contents = append(contents, &genai.Content{
+		Parts: []genai.Part{
+			funcall,
+		},
+		Role: "model",
+	})
+	contents = append(contents, &genai.Content{
+		Parts: []genai.Part{
+			genai.FunctionResponse{
+				Name:     funcall.Name,
+				Response: geminiFunctionResponse,
+			},
+		},
+		Role: "user",
+	})
+	session.History = contents
+
+	finalResponse, err := session.SendMessage(ctx, genai.Text(prompt))
+	if err != nil {
+		fmt.Printf("error in final response: %+s\n", err)
+	}
+
+	printResponse(finalResponse)
 }
