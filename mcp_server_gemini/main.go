@@ -173,7 +173,7 @@ func main() {
 
 	session := model.StartChat()
 	// prompt := "Can you say hello to Col444 using my custom tool?"
-	prompt := "What's the current Bitcoin price in test?"
+	prompt := "What's the current Bitcoin price in RUB?"
 
 	res, err := session.SendMessage(ctx, genai.Text(prompt))
 	if err != nil {

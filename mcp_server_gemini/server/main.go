@@ -18,7 +18,7 @@ type HelloArgs struct {
 }
 
 type BitcoinPriceArguments struct {
-	Currency string `json:"currency" jsonschema:"required,description=The currency to get the Bitcoin price in (USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY, KRW, RUB etc)"`
+	Currency string `json:"currency" jsonschema:"required,description=The currency to get the Bitcoin price in USD, EUR, GBP, JPY, AUD, CAD, CHF, CNY, KRW, RUB"`
 }
 
 type CoinGeckoResponse struct {

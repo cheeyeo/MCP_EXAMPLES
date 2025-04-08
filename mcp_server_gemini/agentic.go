@@ -172,7 +172,7 @@ func main() {
 	model.SetTemperature(0.0)
 
 	session := model.StartChat()
-	prompt := "What's the current Bitcoin price GBP? Only provide your answer in a natural language response."
+	prompt := "What's the current Bitcoin price in RUB? Only provide your answer in a natural language response."
 
 	contents := []*genai.Content{
 		{
